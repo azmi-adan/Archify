@@ -1,0 +1,91 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem 1.75rem;
+  background: rgba(8, 23, 18, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-hair);
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.navbar-brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, var(--emerald-bright), var(--emerald-dim));
+  color: #06140d;
+  font-size: 0.8rem;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.navbar-link {
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  color: var(--ivory-dim);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.navbar-link:hover {
+  color: var(--ivory);
+  background: var(--surface-raised);
+}
+.navbar-link-active {
+  color: var(--emerald-bright);
+  background: var(--emerald-wash);
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.navbar-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.86rem;
+  color: var(--ivory-dim);
+}
+
+.navbar-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--emerald-bright);
+  font-size: 0.75rem;
+}
+
+.navbar-logout {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .navbar-user-chip span:last-child {
+    display: none;
+  }
+}

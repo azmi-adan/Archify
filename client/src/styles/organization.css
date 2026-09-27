@@ -1,0 +1,129 @@
+.org-screen {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2.5rem 1.75rem 4rem;
+}
+
+.org-back {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--ivory-faint);
+  margin-bottom: 1.25rem;
+}
+.org-back:hover {
+  color: var(--emerald-bright);
+}
+
+.org-header {
+  padding: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.org-header h1 {
+  font-size: 1.55rem;
+  margin-bottom: 0.5rem;
+}
+.org-desc {
+  margin-top: 0.7rem;
+  max-width: 56ch;
+  font-size: 0.9rem;
+}
+.org-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.org-edit-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.org-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--ivory-dim);
+}
+.org-edit-form input,
+.org-edit-form select,
+.org-edit-form textarea {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ivory);
+}
+.org-edit-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.org-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 2.25rem;
+}
+
+.org-flow-card {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.org-flow-card:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+}
+.org-flow-n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  border: 1px solid var(--border-strong);
+  color: var(--ivory-faint);
+}
+.org-flow-done .org-flow-n {
+  border-color: var(--emerald);
+  color: var(--emerald-bright);
+  box-shadow: 0 0 10px rgba(47, 203, 132, 0.35);
+}
+.org-flow-card h3 {
+  font-size: 1rem;
+}
+.org-flow-card p {
+  font-size: 0.82rem;
+}
+.org-flow-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.org-flow-connector {
+  flex: 0 0 2.25rem;
+  align-self: center;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 12px);
+}
+.org-flow-connector-done {
+  background: repeating-linear-gradient(90deg, var(--emerald) 0 6px, transparent 6px 12px);
+}
+
+@media (max-width: 760px) {
+  .org-flow {
+    flex-direction: column;
+  }
+  .org-flow-connector {
+    display: none;
+  }
+}
