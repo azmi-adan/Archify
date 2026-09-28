@@ -131,6 +131,78 @@ function HopChain({ hops }) {
   );
 }
 
+
+function spread(n, width, pad = 70) {
+  if (n === 1) return [width / 2];
+  const step = (width - pad * 2) / (n - 1);
+  return Array.from({ length: n }, (_, i) => pad + step * i);
+}
+
+function LayeredTopology({ sites, accessSwitches, accessPoints, redundant, maxHops }) {
+  const W = 760, H = 380;
+  const MAX_DIST = 6, MAX_ACC = 10;
+  const distCount = Math.min(Math.max(sites, 1), MAX_DIST);
+  const accCount = Math.min(Math.max(accessSwitches, 1), MAX_ACC);
+  const coreX = redundant ? [W / 2 - 55, W / 2 + 55] : [W / 2];
+  const distX = spread(distCount, W - 120, 60).map((x) => x + 60);
+  const accX = spread(accCount, W - 120, 40).map((x) => x + 60);
+  const yCore = 60, yDist = 190, yAcc = 320;
+  const overflowAcc = accessSwitches - accCount;
+  const overflowDist = sites - distCount;
+
+  return (
+    <div className="topo-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="topo-diagram" role="img" aria-label="Suggested layered network topology">
+        <defs>
+          <linearGradient id="bandCore" x1="0" x2="1"><stop offset="0" stopColor="rgba(47,203,132,0.10)" /><stop offset="1" stopColor="rgba(47,203,132,0)" /></linearGradient>
+        </defs>
+        <rect x="0" y={yCore - 42} width={W} height="84" rx="10" fill="url(#bandCore)" />
+        <rect x="0" y={yDist - 42} width={W} height="84" rx="10" fill="url(#bandCore)" opacity="0.6" />
+        <rect x="0" y={yAcc - 42} width={W} height="84" rx="10" fill="url(#bandCore)" opacity="0.35" />
+        <text x="14" y={yCore - 26} className="topo-layer-label">CORE</text>
+        <text x="14" y={yDist - 26} className="topo-layer-label">DISTRIBUTION</text>
+        <text x="14" y={yAcc - 26} className="topo-layer-label">ACCESS</text>
+
+        {coreX.map((cx) => distX.map((dx, i) => (
+          <line key={`cd-${cx}-${i}`} x1={cx} y1={yCore} x2={dx} y2={yDist} className="topo-edge topo-edge-core" />
+        )))}
+        {coreX.length === 2 && <line x1={coreX[0]} y1={yCore} x2={coreX[1]} y2={yCore} className="topo-edge topo-edge-core" strokeDasharray="4 4" />}
+        {accX.map((ax, i) => (
+          <line key={`da-${i}`} x1={distX[i % distCount]} y1={yDist} x2={ax} y2={yAcc} className="topo-edge" />
+        ))}
+
+        {coreX.map((cx, i) => (
+          <g key={`core-${i}`} className="topo-core">
+            <circle cx={cx} cy={yCore} r="20" />
+            <text x={cx} y={yCore + 4} textAnchor="middle" className="topo-node-text">CORE</text>
+          </g>
+        ))}
+        {distX.map((dx, i) => (
+          <g key={`dist-${i}`} className="topo-dist">
+            <rect x={dx - 15} y={yDist - 15} width="30" height="30" rx="7" transform={`rotate(45 ${dx} ${yDist})`} />
+            <text x={dx} y={yDist + 30} textAnchor="middle" className="topo-caption">Site {i + 1}</text>
+          </g>
+        ))}
+        {overflowDist > 0 && <text x={W - 50} y={yDist + 4} className="topo-caption">+{overflowDist} sites</text>}
+        {accX.map((ax, i) => (
+          <g key={`acc-${i}`} className="topo-acc">
+            <rect x={ax - 11} y={yAcc - 11} width="22" height="22" rx="4" />
+            {i < accCount && <circle cx={ax} cy={yAcc + 30} r="3" className="topo-ap" />}
+          </g>
+        ))}
+        {overflowAcc > 0 && <text x={W - 40} y={yAcc + 4} className="topo-caption">+{overflowAcc}</text>}
+      </svg>
+      <div className="topo-legend">
+        <span><i className="lg lg-core" />Core {redundant ? "(redundant pair)" : "switch"}</span>
+        <span><i className="lg lg-dist" />Distribution per site ({sites})</span>
+        <span><i className="lg lg-acc" />Access switches ({accessSwitches})</span>
+        <span><i className="lg lg-ap" />Access points ({accessPoints})</span>
+        <span className="mono topo-hops">max {maxHops} hops to access</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { orgId } = useParams();
   const [data, setData] = useState(null);
@@ -220,6 +292,23 @@ export default function Dashboard() {
           <span className="mono">${overview.totals.estimated_cost_usd.toLocaleString()}</span>Est. cost
         </div>
       </div>
+
+      <section className="dash-section panel dash-topo-section">
+        <div className="dash-topo-head">
+          <div>
+            <span className="eyebrow">Suggested design</span>
+            <h2>Layered network topology</h2>
+          </div>
+          <span className="badge">hierarchical model</span>
+        </div>
+        <LayeredTopology
+          sites={overview.totals.sites}
+          accessSwitches={overview.totals.network_devices}
+          accessPoints={overview.totals.access_points}
+          redundant={/redundan|dual|high.?avail/i.test(`${methodology.name} ${methodology.redundancy_description}`)}
+          maxHops={network_analysis.hops.max_hops_to_access}
+        />
+      </section>
 
       <div className="dash-row">
         <section className="dash-section panel dash-span-2">

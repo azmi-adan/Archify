@@ -47,6 +47,82 @@ const NUMBER_FIELDS = [
   "voip_phones", "cctv_cameras", "iot_devices", "expected_growth_percent",
 ];
 
+const STEPS = [
+  { key: "site", title: "Your sites", icon: "⌂", blurb: "Where does the network live?" },
+  { key: "devices", title: "Devices", icon: "▣", blurb: "What will connect to it?" },
+  { key: "people", title: "People", icon: "☰", blurb: "Who uses it, and in which teams?" },
+  { key: "services", title: "Services", icon: "◈", blurb: "What must the network provide?" },
+  { key: "goals", title: "Goals", icon: "◎", blurb: "How should it be built?" },
+  { key: "review", title: "Review", icon: "✓", blurb: "Check it and launch the engine." },
+];
+
+const DEVICE_TILES = [
+  ["wired_devices", "Wired devices", "⌨"],
+  ["wireless_devices", "Wireless devices", "⌁"],
+  ["servers", "Servers", "▤"],
+  ["printers", "Printers", "⎙"],
+  ["voip_phones", "VoIP phones", "☏"],
+  ["cctv_cameras", "CCTV cameras", "◉"],
+  ["iot_devices", "IoT devices", "✦"],
+];
+
+const SERVICE_TILES = [
+  ["internet", "Internet", "🌐", "Uplink to the outside world"],
+  ["guest_wifi", "Guest Wi-Fi", "☕", "Isolated visitor access"],
+  ["staff_wifi", "Staff Wi-Fi", "📶", "Secure wireless for employees"],
+  ["voip", "VoIP", "☎", "Voice-over-IP with QoS"],
+  ["cctv", "CCTV", "📷", "Camera network segment"],
+  ["iot", "IoT", "✦", "Sensors and smart devices"],
+  ["high_availability", "High availability", "⛨", "Redundant core, no single failure"],
+  ["scalability", "Scalability", "⇗", "Spare capacity for growth"],
+];
+
+function Counter({ label, icon, value, onChange, min = 0 }) {
+  const n = Number(value || 0);
+  return (
+    <div className="rq-counter">
+      <span className="rq-counter-icon">{icon}</span>
+      <span className="rq-counter-label">{label}</span>
+      <div className="rq-counter-ctrl">
+        <button type="button" onClick={() => onChange(Math.max(min, n - 1))} aria-label={`decrease ${label}`}>−</button>
+        <input type="number" min={min} value={value} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} />
+        <button type="button" onClick={() => onChange(n + 1)} aria-label={`increase ${label}`}>+</button>
+      </div>
+    </div>
+  );
+}
+
+function Segmented({ options, value, onChange }) {
+  return (
+    <div className="rq-seg">
+      {options.map(([val, label, hint]) => (
+        <button type="button" key={val} className={`rq-seg-opt ${value === val ? "rq-seg-active" : ""}`} onClick={() => onChange(val)}>
+          <strong>{label}</strong>
+          {hint && <span>{hint}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LiveSketch({ sites, accessCount, hasHA }) {
+  const dist = Math.min(sites, 5);
+  const acc = Math.min(accessCount, 10);
+  const xs = (n, w = 240) => Array.from({ length: n }, (_, i) => (w / (n + 1)) * (i + 1) + 10);
+  const dx = xs(dist);
+  const ax = xs(acc);
+  const cx = hasHA ? [95, 165] : [130];
+  return (
+    <svg viewBox="0 0 260 150" className="rq-sketch" aria-hidden="true">
+      {cx.map((c, i) => dx.map((d, j) => <line key={`c${i}${j}`} x1={c} y1="20" x2={d} y2="75" className="rq-sk-link" />))}
+      {ax.map((a, i) => <line key={`a${i}`} x1={dx[i % dist]} y1="75" x2={a} y2="130" className="rq-sk-link" />)}
+      {cx.map((c, i) => <circle key={`cn${i}`} cx={c} cy="20" r="8" className="rq-sk-core" />)}
+      {dx.map((d, i) => <circle key={`dn${i}`} cx={d} cy="75" r="5.5" className="rq-sk-dist" />)}
+      {ax.map((a, i) => <circle key={`an${i}`} cx={a} cy="130" r="3.5" className="rq-sk-acc" />)}
+    </svg>
+  );
+}
+
 export default function Requirements() {
   const { orgId } = useParams();
   const navigate = useNavigate();
@@ -57,6 +133,7 @@ export default function Requirements() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [notice, setNotice] = useState("");
+  const [step, setStep] = useState(0);
 
   const load = async () => {
     setLoading(true);
@@ -88,22 +165,15 @@ export default function Requirements() {
   }, [orgId]);
 
   const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+  const handleNumberChange = (name, value) => setField(name, value === "" ? "" : Number(value));
 
-  const handleNumberChange = (name, value) => {
-    setField(name, value === "" ? "" : Number(value));
-  };
-
-  const addDepartment = () => {
-    setField("departments", [...form.departments, { name: "", users: 1 }]);
-  };
+  const addDepartment = () => setField("departments", [...form.departments, { name: "", users: 1 }]);
   const updateDepartment = (index, key, value) => {
     const next = [...form.departments];
     next[index] = { ...next[index], [key]: key === "users" ? Number(value) : value };
     setField("departments", next);
   };
-  const removeDepartment = (index) => {
-    setField("departments", form.departments.filter((_, i) => i !== index));
-  };
+  const removeDepartment = (index) => setField("departments", form.departments.filter((_, i) => i !== index));
 
   const buildPayload = () => {
     const payload = { ...form };
@@ -119,8 +189,7 @@ export default function Requirements() {
     return payload;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submit = async () => {
     setSaving(true);
     setError("");
     setFieldErrors({});
@@ -138,11 +207,7 @@ export default function Requirements() {
         return;
       }
       setExists(true);
-      setNotice(
-        exists
-          ? "Requirements updated and the design was regenerated."
-          : "Requirements saved. Redirecting to generate the design..."
-      );
+      setNotice(exists ? "Requirements updated and the design was regenerated." : "Requirements saved. Launching the engine...");
       setTimeout(() => navigate(`/organizations/${orgId}/generation`), 900);
     } catch (err) {
       setError("Could not reach the server.");
@@ -151,278 +216,189 @@ export default function Requirements() {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (step < STEPS.length - 1) setStep(step + 1);
+    else submit();
+  };
+
   if (loading) return <p className="status-text">Loading...</p>;
 
-  const totalDevices =
-    Number(form.wired_devices || 0) +
-    Number(form.wireless_devices || 0) +
-    Number(form.servers || 0) +
-    Number(form.printers || 0) +
-    Number(form.voip_phones || 0) +
-    Number(form.cctv_cameras || 0) +
-    Number(form.iot_devices || 0);
-
-  const activeServices = [
-    ["internet", "Internet"],
-    ["guest_wifi", "Guest Wi-Fi"],
-    ["staff_wifi", "Staff Wi-Fi"],
-    ["voip", "VoIP"],
-    ["cctv", "CCTV"],
-    ["iot", "IoT"],
-    ["high_availability", "High availability"],
-    ["scalability", "Scalability"],
-  ].filter(([key]) => form[key]);
+  const totalDevices = DEVICE_TILES.reduce((sum, [k]) => sum + Number(form[k] || 0), 0);
+  const sites = 1 + Number(form.branches || 0);
+  const totalUsers = form.departments.reduce((s, d) => s + Number(d.users || 0), 0);
+  const activeServices = SERVICE_TILES.filter(([key]) => form[key]);
+  const accessGuess = Math.max(1, Math.ceil(totalDevices / 24));
+  const maxDeptUsers = Math.max(1, ...form.departments.map((d) => Number(d.users || 0)));
+  const current = STEPS[step];
 
   return (
-    <div className="req-screen">
-      <Link to={`/organizations/${orgId}`} className="req-back">
-        &larr; Back to organization
-      </Link>
-      <h1 className="req-title">Network requirements</h1>
-      <p className="req-subtitle">
-        {exists
-          ? "Update the requirements below. Saving regenerates the design."
-          : "Describe the organization's network needs to generate a design."}
-      </p>
+    <div className="rq-screen">
+      <Link to={`/organizations/${orgId}`} className="rq-back">&larr; Back to organization</Link>
 
-      {error && <div className="auth-error req-banner">{error}</div>}
-      {notice && <div className="auth-success req-banner">{notice}</div>}
+      <header className="rq-hero">
+        <span className="eyebrow">Requirements studio</span>
+        <h1>Describe the network, <span className="glow-text">we'll design it.</span></h1>
+        <p>{exists ? "Update anything below — saving regenerates the design." : "Six quick steps. Watch the sketch on the right grow as you answer."}</p>
+      </header>
 
-      <div className="req-layout">
-        <form className="req-form" onSubmit={handleSubmit}>
-          <section className="req-section panel">
-            <h2>Organization details</h2>
-            <div className="req-grid">
-              <label>
-                Location
-                <input value={form.location || ""} onChange={(e) => setField("location", e.target.value)} />
-              </label>
-              <label>
-                Branches
-                <input type="number" min="0" value={form.branches} onChange={(e) => handleNumberChange("branches", e.target.value)} />
-              </label>
-              <label>
-                Buildings
-                <input type="number" min="1" value={form.buildings} onChange={(e) => handleNumberChange("buildings", e.target.value)} />
-              </label>
-              <label>
-                Floors per building
-                <input
-                  type="number"
-                  min="1"
-                  value={form.floors_per_building}
-                  onChange={(e) => handleNumberChange("floors_per_building", e.target.value)}
-                />
-              </label>
+      <ol className="rq-stepper">
+        {STEPS.map((s, i) => (
+          <li key={s.key} className={`rq-step ${i === step ? "rq-step-current" : ""} ${i < step ? "rq-step-done" : ""}`}>
+            <button type="button" onClick={() => setStep(i)}>
+              <span className="rq-step-dot">{i < step ? "✓" : s.icon}</span>
+              <span className="rq-step-title">{s.title}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div className="rq-progress"><div style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
+
+      {error && <div className="auth-error rq-banner">{error}</div>}
+      {notice && <div className="auth-success rq-banner">{notice}</div>}
+
+      <div className="rq-layout">
+        <form className="rq-card panel" onSubmit={handleSubmit} key={current.key}>
+          <div className="rq-card-head">
+            <span className="rq-card-icon">{current.icon}</span>
+            <div>
+              <h2>{current.title}</h2>
+              <p>{current.blurb}</p>
+            </div>
+          </div>
+
+          {current.key === "site" && (
+            <div className="rq-fields">
+              <label>Location<input value={form.location || ""} onChange={(e) => setField("location", e.target.value)} placeholder="e.g. Nairobi, Kenya" /></label>
+              <Counter label="Branch offices" icon="⌖" value={form.branches} onChange={(v) => handleNumberChange("branches", v)} />
+              <Counter label="Buildings" icon="▦" value={form.buildings} min={1} onChange={(v) => handleNumberChange("buildings", v)} />
+              <Counter label="Floors per building" icon="≡" value={form.floors_per_building} min={1} onChange={(v) => handleNumberChange("floors_per_building", v)} />
               {Number(form.branches) > 0 && (
-                <label>
-                  Branch share of staff/devices (%)
-                  <input
-                    type="number"
-                    min="0"
-                    max="90"
-                    value={form.branch_users_percent}
-                    onChange={(e) => setField("branch_users_percent", e.target.value)}
-                  />
+                <label>Branch share of staff/devices (%)
+                  <input type="number" min="0" max="90" value={form.branch_users_percent} onChange={(e) => setField("branch_users_percent", e.target.value)} />
                 </label>
               )}
+              <label className="rq-wide">Notes<textarea rows={2} value={form.notes || ""} onChange={(e) => setField("notes", e.target.value)} placeholder="Anything the engine should know" /></label>
             </div>
-            <label className="req-full">
-              Notes
-              <textarea rows={2} value={form.notes || ""} onChange={(e) => setField("notes", e.target.value)} />
-            </label>
-          </section>
-
-          <section className="req-section panel">
-            <h2>People and devices</h2>
-            <div className="req-grid">
-              <label>
-                Employees
-                <input
-                  type="number"
-                  min="0"
-                  value={form.employees}
-                  onChange={(e) => setField("employees", e.target.value)}
-                  placeholder="derived from departments if blank"
-                />
-              </label>
-              <label>
-                Wired devices
-                <input type="number" min="0" value={form.wired_devices} onChange={(e) => handleNumberChange("wired_devices", e.target.value)} />
-              </label>
-              <label>
-                Wireless devices
-                <input type="number" min="0" value={form.wireless_devices} onChange={(e) => handleNumberChange("wireless_devices", e.target.value)} />
-              </label>
-              <label>
-                Servers
-                <input type="number" min="0" value={form.servers} onChange={(e) => handleNumberChange("servers", e.target.value)} />
-              </label>
-              <label>
-                Printers
-                <input type="number" min="0" value={form.printers} onChange={(e) => handleNumberChange("printers", e.target.value)} />
-              </label>
-              <label>
-                VoIP phones
-                <input type="number" min="0" value={form.voip_phones} onChange={(e) => handleNumberChange("voip_phones", e.target.value)} />
-              </label>
-              <label>
-                CCTV cameras
-                <input type="number" min="0" value={form.cctv_cameras} onChange={(e) => handleNumberChange("cctv_cameras", e.target.value)} />
-              </label>
-              <label>
-                IoT devices
-                <input type="number" min="0" value={form.iot_devices} onChange={(e) => handleNumberChange("iot_devices", e.target.value)} />
-              </label>
-            </div>
-          </section>
-
-          <section className="req-section panel">
-            <h2>Departments</h2>
-            {form.departments.map((d, i) => (
-              <div className="req-dept-row" key={i}>
-                <input placeholder="Name" value={d.name} onChange={(e) => updateDepartment(i, "name", e.target.value)} />
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Users"
-                  value={d.users}
-                  onChange={(e) => updateDepartment(i, "users", e.target.value)}
-                />
-                <button type="button" className="btn btn-danger req-remove-btn" onClick={() => removeDepartment(i)}>
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button type="button" className="btn btn-ghost" onClick={addDepartment}>
-              + Add department
-            </button>
-          </section>
-
-          <section className="req-section panel">
-            <h2>Services</h2>
-            <div className="req-checks">
-              {[
-                ["internet", "Internet"],
-                ["guest_wifi", "Guest Wi-Fi"],
-                ["staff_wifi", "Staff Wi-Fi"],
-                ["voip", "VoIP"],
-                ["cctv", "CCTV"],
-                ["iot", "IoT"],
-                ["high_availability", "High availability"],
-                ["scalability", "Scalability"],
-              ].map(([key, label]) => (
-                <label key={key} className="req-check">
-                  <input type="checkbox" checked={form[key]} onChange={(e) => setField(key, e.target.checked)} />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </section>
-
-          <section className="req-section panel">
-            <h2>Design goals</h2>
-            <div className="req-grid">
-              <label>
-                Expected growth (%)
-                <input
-                  type="number"
-                  min="0"
-                  max="500"
-                  value={form.expected_growth_percent}
-                  onChange={(e) => handleNumberChange("expected_growth_percent", e.target.value)}
-                />
-              </label>
-              <label>
-                Budget level
-                <select value={form.budget_level} onChange={(e) => setField("budget_level", e.target.value)}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label>
-                Budget amount (USD, optional)
-                <input
-                  type="number"
-                  min="0"
-                  value={form.budget_amount_usd}
-                  onChange={(e) => setField("budget_amount_usd", e.target.value)}
-                />
-              </label>
-              <label>
-                Security level
-                <select value={form.security_level} onChange={(e) => setField("security_level", e.target.value)}>
-                  <option value="basic">Basic</option>
-                  <option value="standard">Standard</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label>
-                Performance level
-                <select value={form.performance_level} onChange={(e) => setField("performance_level", e.target.value)}>
-                  <option value="standard">Standard</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label>
-                Addressing method
-                <select value={form.addressing_method} onChange={(e) => setField("addressing_method", e.target.value)}>
-                  <option value="auto">Auto</option>
-                  <option value="flsm">FLSM</option>
-                  <option value="vlsm">VLSM</option>
-                </select>
-              </label>
-            </div>
-          </section>
-
-          {Object.keys(fieldErrors).length > 0 && (
-            <ul className="req-field-errors">
-              {Object.entries(fieldErrors).map(([k, v]) => (
-                <li key={k}>
-                  <strong>{k}:</strong> {v}
-                </li>
-              ))}
-            </ul>
           )}
 
-          <button type="submit" className="btn btn-primary req-submit-btn" disabled={saving}>
-            {saving ? "Saving..." : exists ? "Save and regenerate design" : "Save requirements"}
-          </button>
+          {current.key === "devices" && (
+            <div className="rq-counters">
+              {DEVICE_TILES.map(([key, label, icon]) => (
+                <Counter key={key} label={label} icon={icon} value={form[key]} onChange={(v) => handleNumberChange(key, v)} />
+              ))}
+            </div>
+          )}
+
+          {current.key === "people" && (
+            <div>
+              <label className="rq-inline">Total employees
+                <input type="number" min="0" value={form.employees} onChange={(e) => setField("employees", e.target.value)} placeholder="derived from departments if blank" />
+              </label>
+              <div className="rq-depts">
+                {form.departments.map((d, i) => (
+                  <div className="rq-dept" key={i}>
+                    <div className="rq-dept-row">
+                      <input placeholder="Department name" value={d.name} onChange={(e) => updateDepartment(i, "name", e.target.value)} />
+                      <input type="number" min="1" value={d.users} onChange={(e) => updateDepartment(i, "users", e.target.value)} />
+                      <button type="button" className="btn btn-danger rq-x" onClick={() => removeDepartment(i)}>✕</button>
+                    </div>
+                    <div className="rq-dept-bar"><span style={{ width: `${(Number(d.users || 0) / maxDeptUsers) * 100}%` }} /></div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="btn btn-ghost" onClick={addDepartment}>+ Add department</button>
+            </div>
+          )}
+
+          {current.key === "services" && (
+            <div className="rq-tiles">
+              {SERVICE_TILES.map(([key, label, icon, hint]) => (
+                <button type="button" key={key} className={`rq-tile ${form[key] ? "rq-tile-on" : ""}`} onClick={() => setField(key, !form[key])}>
+                  <span className="rq-tile-icon">{icon}</span>
+                  <strong>{label}</strong>
+                  <span>{hint}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {current.key === "goals" && (
+            <div className="rq-goals">
+              <div>
+                <span className="rq-goal-label">Budget level</span>
+                <Segmented value={form.budget_level} onChange={(v) => setField("budget_level", v)}
+                  options={[["low", "Low", "lean"], ["medium", "Medium", "balanced"], ["high", "High", "premium"]]} />
+              </div>
+              <div>
+                <span className="rq-goal-label">Security level</span>
+                <Segmented value={form.security_level} onChange={(v) => setField("security_level", v)}
+                  options={[["basic", "Basic"], ["standard", "Standard"], ["high", "High"]]} />
+              </div>
+              <div>
+                <span className="rq-goal-label">Performance</span>
+                <Segmented value={form.performance_level} onChange={(v) => setField("performance_level", v)}
+                  options={[["standard", "Standard"], ["high", "High"]]} />
+              </div>
+              <div>
+                <span className="rq-goal-label">Addressing method</span>
+                <Segmented value={form.addressing_method} onChange={(v) => setField("addressing_method", v)}
+                  options={[["auto", "Auto", "engine decides"], ["flsm", "FLSM", "fixed size"], ["vlsm", "VLSM", "variable size"]]} />
+              </div>
+              <label>Expected growth: <b className="mono">{form.expected_growth_percent}%</b>
+                <input type="range" min="0" max="200" value={form.expected_growth_percent} onChange={(e) => handleNumberChange("expected_growth_percent", e.target.value)} />
+              </label>
+              <label>Budget amount (USD, optional)
+                <input type="number" min="0" value={form.budget_amount_usd} onChange={(e) => setField("budget_amount_usd", e.target.value)} />
+              </label>
+            </div>
+          )}
+
+          {current.key === "review" && (
+            <div className="rq-review">
+              <div className="rq-review-grid">
+                <div><span className="mono">{sites}</span>Sites</div>
+                <div><span className="mono">{form.buildings}</span>Buildings</div>
+                <div><span className="mono">{totalDevices}</span>Devices</div>
+                <div><span className="mono">{totalUsers || form.employees || 0}</span>People</div>
+                <div><span className="mono">{form.departments.length}</span>Departments</div>
+                <div><span className="mono">{form.expected_growth_percent}%</span>Growth</div>
+              </div>
+              <div className="rq-review-tags">
+                {activeServices.map(([k, l]) => <span key={k} className="badge">{l}</span>)}
+                <span className="badge">budget: {form.budget_level}</span>
+                <span className="badge">security: {form.security_level}</span>
+                <span className="badge">{form.addressing_method}</span>
+              </div>
+              {Object.keys(fieldErrors).length > 0 && (
+                <ul className="rq-errors">
+                  {Object.entries(fieldErrors).map(([k, v]) => <li key={k}><strong>{k}:</strong> {v}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="rq-nav">
+            <button type="button" className="btn btn-ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
+            {step < STEPS.length - 1 ? (
+              <button type="submit" className="btn btn-primary">Continue</button>
+            ) : (
+              <button type="submit" className="btn btn-primary rq-launch" disabled={saving}>
+                {saving ? "Saving..." : exists ? "Save & regenerate" : "Save & launch engine"}
+              </button>
+            )}
+          </div>
         </form>
 
-        <aside className="req-summary panel">
-          <h3>Live summary</h3>
-          <div className="req-summary-row">
-            <span>Sites</span>
-            <span className="mono">{1 + Number(form.branches || 0)}</span>
+        <aside className="rq-side panel">
+          <span className="eyebrow">Live sketch</span>
+          <LiveSketch sites={sites} accessCount={accessGuess} hasHA={form.high_availability} />
+          <div className="rq-side-stats">
+            <div><span className="mono">{sites}</span>sites</div>
+            <div><span className="mono">{totalDevices}</span>devices</div>
+            <div><span className="mono">{activeServices.length}</span>services</div>
           </div>
-          <div className="req-summary-row">
-            <span>Departments</span>
-            <span className="mono">{form.departments.length}</span>
-          </div>
-          <div className="req-summary-row">
-            <span>Total devices</span>
-            <span className="mono">{totalDevices}</span>
-          </div>
-          <div className="req-summary-row">
-            <span>Growth target</span>
-            <span className="mono">{form.expected_growth_percent}%</span>
-          </div>
-          <div className="req-summary-row">
-            <span>Budget</span>
-            <span className="mono">{form.budget_level}</span>
-          </div>
-          <div className="req-summary-divider" />
-          <p className="req-summary-label">Active services</p>
-          <div className="req-summary-tags">
-            {activeServices.length === 0 && <span className="req-summary-empty">None selected</span>}
-            {activeServices.map(([key, label]) => (
-              <span key={key} className="badge">
-                {label}
-              </span>
-            ))}
-          </div>
+          <p className="rq-side-note">A rough preview only — the engine produces the real design.</p>
         </aside>
       </div>
     </div>

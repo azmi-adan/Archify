@@ -90,9 +90,11 @@ export default function Organization() {
   if (!org) return null;
 
   const stepState = (done) => (done ? "done" : "pending");
+  const progress = org.has_design ? 100 : org.has_requirements ? 55 : 10;
   const steps = [
     {
       n: 1,
+      icon: "▤",
       title: "Requirements",
       status: stepState(org.has_requirements),
       detail: org.has_requirements ? "Defined — view or edit" : "Not defined yet",
@@ -101,6 +103,7 @@ export default function Organization() {
     },
     {
       n: 2,
+      icon: "⚙",
       title: "Generation",
       status: stepState(org.has_design),
       detail: org.has_design ? `Design v${org.design_version} generated` : "Not generated yet",
@@ -109,6 +112,7 @@ export default function Organization() {
     },
     {
       n: 3,
+      icon: "◈",
       title: "Dashboard",
       status: stepState(org.has_design),
       detail: "View the full network design",
@@ -179,6 +183,16 @@ export default function Organization() {
         )}
       </div>
 
+      <div className="org-progress panel">
+        <div className="org-progress-top">
+          <span>Design pipeline</span>
+          <span className="mono">{progress}%</span>
+        </div>
+        <div className="org-progress-track">
+          <div className="org-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
       <div className="org-flow">
         {steps.map((s, i) => (
           <React.Fragment key={s.n}>
@@ -187,9 +201,15 @@ export default function Organization() {
               className={`org-flow-card panel org-flow-${s.status} ${s.disabled ? "org-flow-disabled" : ""}`}
               onClick={(e) => s.disabled && e.preventDefault()}
             >
-              <span className="org-flow-n mono">{s.n}</span>
+              <div className="org-flow-top">
+                <span className="org-flow-n mono">{s.n}</span>
+                <span className="org-flow-icon">{s.icon}</span>
+              </div>
               <h3>{s.title}</h3>
               <p>{s.detail}</p>
+              <span className={`org-flow-state mono org-flow-state-${s.status}`}>
+                {s.status === "done" ? "complete" : s.disabled ? "locked" : "ready"}
+              </span>
             </Link>
             {i < steps.length - 1 && <div className={`org-flow-connector ${s.status === "done" ? "org-flow-connector-done" : ""}`} />}
           </React.Fragment>

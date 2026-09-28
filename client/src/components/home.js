@@ -13,6 +13,31 @@ function authHeaders() {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
+
+function ProgressRing({ pct }) {
+  const size = 56, stroke = 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="ring-svg" aria-label={`${pct}% complete`}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-raised)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--emerald)" strokeWidth={stroke}
+        strokeDasharray={`${(pct / 100) * c} ${c}`} strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <text x="50%" y="54%" textAnchor="middle" className="ring-text">{pct}%</text>
+    </svg>
+  );
+}
+
+function MiniTopo({ active }) {
+  return (
+    <svg viewBox="0 0 120 50" className={`mini-topo ${active ? "mini-topo-active" : ""}`} aria-hidden="true">
+      <line x1="60" y1="8" x2="25" y2="26" /><line x1="60" y1="8" x2="95" y2="26" />
+      <line x1="25" y1="26" x2="10" y2="44" /><line x1="25" y1="26" x2="40" y2="44" />
+      <line x1="95" y1="26" x2="80" y2="44" /><line x1="95" y1="26" x2="110" y2="44" />
+      <circle cx="60" cy="8" r="4" /><circle cx="25" cy="26" r="3" /><circle cx="95" cy="26" r="3" />
+      <circle cx="10" cy="44" r="2.5" /><circle cx="40" cy="44" r="2.5" /><circle cx="80" cy="44" r="2.5" /><circle cx="110" cy="44" r="2.5" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [orgs, setOrgs] = useState([]);
@@ -28,7 +53,7 @@ export default function Home() {
     setError("");
     try {
       const res = await fetch(`${API_BASE}/organizations`, { headers: authHeaders() });
-      if (res.status === 401) {
+      if (res.status === 401 || res.status === 422) {
         localStorage.removeItem("archify_token");
         navigate("/login", { replace: true });
         return;
@@ -94,7 +119,8 @@ export default function Home() {
     <div className="home-screen">
       <div className="home-header">
         <div>
-          <h1 className="home-title">Your organizations</h1>
+          <span className="eyebrow">Workspace</span>
+          <h1 className="home-title">Your <span className="glow-text">organizations</span></h1>
           <p className="home-subtitle">
             Each organization has its own requirements, generated design and dashboard.
           </p>
@@ -168,9 +194,13 @@ export default function Home() {
       <div className="home-grid">
         {orgs.map((org) => (
           <div key={org.id} className="org-card panel" onClick={() => navigate(`/organizations/${org.id}`)}>
+            <MiniTopo active={org.has_design} />
             <div className="org-card-top">
-              <h2>{org.name}</h2>
-              <span className="badge">{org.organization_type}</span>
+              <div>
+                <h2>{org.name}</h2>
+                <span className="badge">{org.organization_type}</span>
+              </div>
+              <ProgressRing pct={org.has_design ? 100 : org.has_requirements ? 50 : 10} />
             </div>
             {org.description && <p className="org-card-desc">{org.description}</p>}
             <div className="org-card-status">

@@ -177,3 +177,39 @@
     padding: 2rem 1.25rem;
   }
 }
+
+.auth-art {
+  width: 100%;
+  max-width: 380px;
+  margin: 1.5rem 0;
+  opacity: 0.95;
+}
+.auth-art-link {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  animation: linkPulse 4s ease-in-out infinite;
+}
+.auth-art-node {
+  fill: var(--moss);
+  animation: nodePulse 3s ease-in-out infinite;
+}
+.auth-art-hub {
+  fill: var(--emerald-bright);
+  filter: drop-shadow(0 0 10px rgba(85, 230, 165, 0.8));
+}
+@keyframes linkPulse {
+  0%, 100% { stroke: rgba(148, 201, 173, 0.18); }
+  50% { stroke: rgba(62, 214, 143, 0.7); }
+}
+@keyframes nodePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.auth-card {
+  animation: fadeUp 0.5s ease both;
+}
+.auth-success a {
+  color: var(--emerald-bright);
+  font-weight: 600;
+  text-decoration: underline;
+}

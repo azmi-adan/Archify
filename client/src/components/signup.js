@@ -1,8 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/signup.css";
 
 const API_BASE = "http://127.0.0.1:5000/api";
+
+
+function AuthArt() {
+  const pts = [[60,60],[150,30],[240,70],[320,40],[90,140],[180,120],[270,150],[340,120],[40,220],[130,210],[220,230],[310,215]];
+  const links = [[0,1],[1,2],[2,3],[0,4],[1,5],[2,5],[2,6],[3,7],[4,5],[5,6],[6,7],[4,8],[5,9],[6,10],[7,11],[8,9],[9,10],[10,11]];
+  return (
+    <svg viewBox="0 0 380 260" className="auth-art" aria-hidden="true">
+      {links.map(([a, b], i) => (
+        <line key={i} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]} className="auth-art-link" style={{ animationDelay: `${i * 0.15}s` }} />
+      ))}
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === 5 ? 7 : 4} className={i === 5 ? "auth-art-hub" : "auth-art-node"} style={{ animationDelay: `${i * 0.2}s` }} />
+      ))}
+    </svg>
+  );
+}
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -13,6 +29,16 @@ export default function Signup() {
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // After a successful signup, go to the login page (with the username prefilled).
+  useEffect(() => {
+    if (!success) return undefined;
+    const t = setTimeout(
+      () => navigate("/login", { replace: true, state: { registered: form.username } }),
+      1000
+    );
+    return () => clearTimeout(t);
+  }, [success, navigate, form.username]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,14 +61,18 @@ export default function Signup() {
           password: form.password,
         }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
+      let json = {};
+      try {
+        json = await res.json();
+      } catch (e) {
+        json = {};
+      }
+      if (!res.ok || json.success === false) {
         setFieldErrors(json.details || {});
-        setError(json.message || "Signup failed.");
+        setError(json.message || json.msg || json.error || "Signup failed.");
         return;
       }
       setSuccess(true);
-      setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (err) {
       setError("Could not reach the server.");
     } finally {
@@ -56,6 +86,7 @@ export default function Signup() {
         <Link to="/" className="auth-brand-mark">
           <span>A</span>Archify
         </Link>
+        <AuthArt />
         <div className="auth-brand-copy">
           <h2>Set up once, regenerate as requirements change.</h2>
           <p>
@@ -76,7 +107,11 @@ export default function Signup() {
           <p className="auth-subtitle">Start designing network architectures with Archify.</p>
 
           {error && <div className="auth-error">{error}</div>}
-          {success && <div className="auth-success">Account created. Redirecting to login...</div>}
+          {success && (
+            <div className="auth-success">
+              Account created. Redirecting to login... <Link to="/login" state={{ registered: form.username }}>Log in now</Link>
+            </div>
+          )}
 
           <label className="auth-label">
             Username
@@ -101,7 +136,7 @@ export default function Signup() {
             <input className="auth-input" name="confirm" type="password" value={form.confirm} onChange={handleChange} required />
           </label>
 
-          <button className="btn btn-primary auth-button" type="submit" disabled={loading}>
+          <button className="btn btn-primary auth-button" type="submit" disabled={loading || success}>
             {loading ? "Creating account..." : "Sign up"}
           </button>
 

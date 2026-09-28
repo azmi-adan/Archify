@@ -166,3 +166,51 @@
     grid-template-columns: 1fr;
   }
 }
+
+.ring-svg {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+.ring-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  fill: var(--ivory);
+}
+.mini-topo {
+  width: 100%;
+  height: 46px;
+  margin-bottom: 0.2rem;
+}
+.mini-topo line {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+.mini-topo circle {
+  fill: var(--ivory-faint);
+}
+.mini-topo-active line {
+  stroke: var(--emerald-dim);
+}
+.mini-topo-active circle {
+  fill: var(--emerald);
+}
+.home-screen .eyebrow {
+  margin-bottom: 0.5rem;
+}
+.home-stat {
+  position: relative;
+  overflow: hidden;
+}
+.home-stat::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle, rgba(47, 203, 132, 0.15), transparent 70%);
+}
+.org-card {
+  animation: fadeUp 0.5s ease both;
+}

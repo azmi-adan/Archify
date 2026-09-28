@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import Splash from "./components/splash";
 import Login from "./components/login";
 import Signup from "./components/signup";
@@ -18,12 +18,33 @@ function PrivateRoute({ children }) {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
 }
 
-function Layout({ children }) {
+function Footer() {
   return (
-    <>
-      {isAuthenticated() && <Navbar />}
+    <footer className="site-footer">
+      <div className="site-footer-inner">
+        <span className="site-footer-brand">
+          <span className="site-footer-mark">A</span>Archify
+        </span>
+        <span className="site-footer-tag mono">Rule-based network design engine</span>
+        <nav className="site-footer-links">
+          <Link to="/">Home</Link>
+          <Link to="/login">Log in</Link>
+          <Link to="/signup">Sign up</Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
+// nav = true only on logged-in screens; public pages (landing, login, signup)
+// never mount the Navbar, so a saved token can't redirect them away.
+function Shell({ children, nav = false }) {
+  return (
+    <div className="app-shell">
+      {nav && isAuthenticated() && <Navbar />}
       <div className="page-content">{children}</div>
-    </>
+      <Footer />
+    </div>
   );
 }
 
@@ -31,17 +52,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Splash />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<Shell><Splash /></Shell>} />
+        <Route path="/login" element={<Shell><Login /></Shell>} />
+        <Route path="/signup" element={<Shell><Signup /></Shell>} />
 
         <Route
           path="/home"
           element={
             <PrivateRoute>
-              <Layout>
+              <Shell nav>
                 <Home />
-              </Layout>
+              </Shell>
             </PrivateRoute>
           }
         />
@@ -50,9 +71,9 @@ export default function App() {
           path="/organizations/:orgId"
           element={
             <PrivateRoute>
-              <Layout>
+              <Shell nav>
                 <Organization />
-              </Layout>
+              </Shell>
             </PrivateRoute>
           }
         />
@@ -61,9 +82,9 @@ export default function App() {
           path="/organizations/:orgId/requirements"
           element={
             <PrivateRoute>
-              <Layout>
+              <Shell nav>
                 <Requirements />
-              </Layout>
+              </Shell>
             </PrivateRoute>
           }
         />
@@ -72,9 +93,9 @@ export default function App() {
           path="/organizations/:orgId/generation"
           element={
             <PrivateRoute>
-              <Layout>
+              <Shell nav>
                 <Generation />
-              </Layout>
+              </Shell>
             </PrivateRoute>
           }
         />
@@ -83,9 +104,9 @@ export default function App() {
           path="/organizations/:orgId/dashboard"
           element={
             <PrivateRoute>
-              <Layout>
+              <Shell nav>
                 <Dashboard />
-              </Layout>
+              </Shell>
             </PrivateRoute>
           }
         />

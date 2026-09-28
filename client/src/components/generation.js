@@ -18,6 +18,24 @@ const RUN_STAGES = [
   "Analyzing topology",
 ];
 
+
+function EngineOrb({ running }) {
+  return (
+    <div className={`orb ${running ? "orb-running" : ""}`} aria-hidden="true">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="88" className="orb-ring orb-ring-1" />
+        <circle cx="100" cy="100" r="66" className="orb-ring orb-ring-2" />
+        <circle cx="100" cy="100" r="44" className="orb-ring orb-ring-3" />
+        {[0, 60, 120, 180, 240, 300].map((deg) => (
+          <circle key={deg} cx="100" cy="12" r="4" className="orb-sat" transform={`rotate(${deg} 100 100)`} />
+        ))}
+        <circle cx="100" cy="100" r="20" className="orb-core" />
+        <text x="100" y="105" textAnchor="middle" className="orb-text">A</text>
+      </svg>
+    </div>
+  );
+}
+
 export default function Generation() {
   const { orgId } = useParams();
   const [design, setDesign] = useState(null);
@@ -74,10 +92,23 @@ export default function Generation() {
       <Link to={`/organizations/${orgId}`} className="gen-back">
         &larr; Back to organization
       </Link>
-      <h1 className="gen-title">Generation engine</h1>
+      <span className="eyebrow">Design engine</span>
+      <h1 className="gen-title">Generation <span className="glow-text">engine</span></h1>
       <p className="gen-subtitle">Run the rule-based engine to turn requirements into a full network design.</p>
 
       {error && <div className="auth-error gen-banner">{error}</div>}
+
+      <div className="gen-stage-wrap">
+        <EngineOrb running={generating} />
+        <ol className="gen-pipeline">
+          {RUN_STAGES.map((stage, i) => (
+            <li key={stage} className={generating || design ? "gen-pipe-on" : ""} style={{ animationDelay: `${i * 0.25}s` }}>
+              <span className="mono">{String(i + 1).padStart(2, "0")}</span>
+              {stage}
+            </li>
+          ))}
+        </ol>
+      </div>
 
       <div className="gen-console panel">
         <div className="gen-console-head">
@@ -139,6 +170,13 @@ export default function Generation() {
             <div className="gen-stat">
               <span className="mono">${result.overview.totals.estimated_cost_usd.toLocaleString()}</span>Estimated cost
             </div>
+          </div>
+
+          <div className="gen-layers">
+            <span className="gen-layers-title mono">generated layers</span>
+            {[["Core", 1], ["Distribution", 2], ["Access", 3]].map(([name, w]) => (
+              <div key={name} className="gen-layer" style={{ width: `${40 + w * 20}%` }}>{name}</div>
+            ))}
           </div>
 
           <Link to={`/organizations/${orgId}/dashboard`} className="btn btn-primary gen-dashboard-link">

@@ -127,3 +127,60 @@
     display: none;
   }
 }
+
+.org-header {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at top right, rgba(47, 203, 132, 0.12), transparent 60%), linear-gradient(180deg, var(--surface-raised), var(--surface));
+}
+.org-progress {
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.4rem;
+}
+.org-progress-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--ivory-dim);
+  margin-bottom: 0.65rem;
+}
+.org-progress-top .mono {
+  color: var(--emerald-bright);
+}
+.org-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+.org-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--emerald-dim), var(--emerald-bright));
+  box-shadow: 0 0 14px rgba(47, 203, 132, 0.6);
+  transition: width 0.8s ease;
+}
+.org-flow-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.org-flow-icon {
+  font-size: 1.5rem;
+  color: var(--emerald-bright);
+  opacity: 0.85;
+}
+.org-flow-state {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ivory-faint);
+}
+.org-flow-state-done {
+  color: var(--emerald-bright);
+}
+.org-flow-card {
+  animation: fadeUp 0.5s ease both;
+}
